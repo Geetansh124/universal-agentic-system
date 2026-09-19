@@ -1,0 +1,69 @@
+{
+  "$schema": "Universal LLM Router Multi-Provider Configuration",
+  "comment": "Configure multiple providers and keys. When any key or provider is exhausted (HTTP 429 / quota limit), the router automatically shifts to the next one.",
+  "providers": [
+    {
+      "name": "google-gemini",
+      "provider_type": "gemini",
+      "model": "gemini-2.5-flash",
+      "priority": 1,
+      "api_keys": [
+        "${GEMINI_API_KEY_1}",
+        "${GEMINI_API_KEY_2}"
+      ],
+      "timeout_seconds": 30.0,
+      "cooldown_seconds": 60.0,
+      "enabled": true
+    },
+    {
+      "name": "groq-fast",
+      "provider_type": "openai_compatible",
+      "model": "llama-3.3-70b-versatile",
+      "base_url": "https://api.groq.com/openai/v1",
+      "priority": 2,
+      "api_keys": [
+        "${GROQ_API_KEY}"
+      ],
+      "timeout_seconds": 20.0,
+      "cooldown_seconds": 60.0,
+      "enabled": true
+    },
+    {
+      "name": "openai",
+      "provider_type": "openai",
+      "model": "gpt-4o-mini",
+      "priority": 3,
+      "api_keys": [
+        "${OPENAI_API_KEY}"
+      ],
+      "timeout_seconds": 30.0,
+      "cooldown_seconds": 60.0,
+      "enabled": true
+    },
+    {
+      "name": "anthropic-claude",
+      "provider_type": "anthropic",
+      "model": "claude-3-5-haiku-20241022",
+      "priority": 4,
+      "api_keys": [
+        "${ANTHROPIC_API_KEY}"
+      ],
+      "timeout_seconds": 30.0,
+      "cooldown_seconds": 120.0,
+      "enabled": true
+    },
+    {
+      "name": "local-ollama",
+      "provider_type": "openai_compatible",
+      "model": "qwen2.5-coder",
+      "base_url": "http://localhost:11434/v1",
+      "priority": 5,
+      "api_keys": [
+        "ollama-local"
+      ],
+      "timeout_seconds": 60.0,
+      "cooldown_seconds": 30.0,
+      "enabled": false
+    }
+  ]
+}
