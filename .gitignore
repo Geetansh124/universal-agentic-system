@@ -1,0 +1,20 @@
+# universal-agentic-system
+
+# Temp clones
+_voltagent_temp/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Node (if any project uses it)
+node_modules/
