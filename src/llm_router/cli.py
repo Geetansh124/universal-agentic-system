@@ -223,12 +223,20 @@ def main() -> None:
 
     config_path = args.config
     if not os.path.exists(config_path):
-        example_path = "config/llm_router_config.example.json"
-        if os.path.exists(example_path):
-            config_path = example_path
+        env_cfg = os.getenv("UNIVERSAL_LLM_CONFIG")
+        if env_cfg and os.path.exists(env_cfg):
+            config_path = env_cfg
         else:
-            print(f"Configuration file not found at '{args.config}'. Run with --simulate-failover to test.")
-            sys.exit(1)
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            pkg_cfg = os.path.join(base_dir, "config", "llm_router_config.json")
+            pkg_example = os.path.join(base_dir, "config", "llm_router_config.example.json")
+            if os.path.exists(pkg_cfg):
+                config_path = pkg_cfg
+            elif os.path.exists(pkg_example):
+                config_path = pkg_example
+            else:
+                print(f"Configuration file not found at '{args.config}'. Run with --simulate-failover to test.")
+                sys.exit(1)
 
     try:
         router = UniversalLLMRouter.from_config_file(config_path)

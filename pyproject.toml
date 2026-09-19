@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "universal-agentic-system"
+version = "1.0.0"
+description = "Universal LLM Router with multi-provider automatic failover"
+readme = "CLAUDE.md"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.28.0"
+]
+
+[project.scripts]
+llm-router = "src.llm_router.cli:main"
+universal-llm = "src.llm_router.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
