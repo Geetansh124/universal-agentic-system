@@ -214,8 +214,21 @@ def main() -> None:
     parser.add_argument("--health", action="store_true", help="Print health status of configured providers")
     parser.add_argument("--simulate-failover", action="store_true", help="Run simulated automatic failover demo")
     parser.add_argument("--chat", action="store_true", help="Start interactive multi-turn chat session")
+    parser.add_argument("--ui", action="store_true", help="Start the Claude Desktop-style Agentic Platform UI")
     parser.add_argument("--prompt", type=str, help="Generate completion for a single prompt")
     args = parser.parse_args()
+
+    if args.ui:
+        import webbrowser
+        import uvicorn
+        port = 8000
+        print(f"Starting Universal Agentic Platform UI at http://127.0.0.1:{port} ...")
+        try:
+            webbrowser.open(f"http://127.0.0.1:{port}")
+        except Exception:
+            pass
+        uvicorn.run("src.web.server:app", host="127.0.0.1", port=port, reload=False)
+        return
 
     if args.simulate_failover:
         run_failover_simulation()

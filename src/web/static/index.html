@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal Agentic Platform</title>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Highlight.js for Code Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <!-- Marked for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon">⚡</div>
+          <div class="brand-info">
+            <span class="brand-title">Universal Agentic</span>
+            <span class="brand-subtitle">Claude-Style Desktop</span>
+          </div>
+        </div>
+        <button class="btn-new-chat" id="btnNewChat">
+          <span>+</span> New Chat
+        </button>
+      </div>
+
+      <!-- Agent Personas Selection -->
+      <div class="sidebar-section">
+        <label class="section-label">AGENT PERSONA</label>
+        <div class="agent-list" id="agentList">
+          <!-- Dynamically populated from /api/agents -->
+        </div>
+      </div>
+
+      <!-- Active Provider Failover Chain -->
+      <div class="sidebar-section">
+        <label class="section-label">FAILOVER ROUTE</label>
+        <div class="route-badge-container" id="routeBadgeContainer">
+          <div class="route-step active">
+            <span class="route-dot"></span>
+            <span class="route-name" id="primaryProviderName">Loading...</span>
+          </div>
+          <div class="route-arrow">↓</div>
+          <div class="route-step standby">
+            <span class="route-dot standby"></span>
+            <span class="route-name" id="fallbackProviderName">Loading...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conversations History -->
+      <div class="sidebar-section chats-section">
+        <label class="section-label">RECENT CHATS</label>
+        <div class="chat-history-list" id="chatHistoryList">
+          <div class="history-item active">Current Conversation</div>
+        </div>
+      </div>
+
+      <!-- Sidebar Footer / Settings -->
+      <div class="sidebar-footer">
+        <button class="btn-api-settings" id="btnOpenApiModal">
+          <span class="btn-icon">⚙️</span>
+          <span>Manage APIs & Keys</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CHAT AREA -->
+    <main class="chat-main">
+      
+      <!-- Top Navigation Header -->
+      <header class="chat-header">
+        <div class="header-left">
+          <button class="btn-toggle-sidebar" id="btnToggleSidebar" title="Toggle Sidebar">☰</button>
+          <div class="current-agent-badge" id="currentAgentBadge">
+            <span class="agent-avatar" id="headerAgentAvatar">🏛️</span>
+            <div>
+              <span class="agent-name" id="headerAgentName">Chief Architect</span>
+              <span class="agent-role" id="headerAgentRole">System Architecture & Resilience</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div class="live-status-pill" id="liveStatusPill">
+            <span class="status-indicator"></span>
+            <span id="activeModelLabel">meta/llama-3.3-70b-instruct</span>
+          </div>
+          <button class="btn-header-action" id="btnClearChat" title="Clear Chat">Clear</button>
+          <button class="btn-header-action" id="btnToggleArtifacts" title="Toggle Artifacts">
+            <span>Artifacts</span> <span class="badge-count" id="artifactCountBadge">0</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Messages Container -->
+      <div class="chat-messages" id="chatMessages">
+        
+        <!-- Welcome Hero View (when empty) -->
+        <div class="welcome-hero" id="welcomeHero">
+          <div class="hero-logo">⚡</div>
+          <h1 class="hero-title">Universal Agentic System</h1>
+          <p class="hero-subtitle">Multi-Provider LLM Router with Real-Time Automatic Failover & Split-Screen Artifacts.</p>
+          
+          <div class="prompt-starters">
+            <button class="starter-card" data-prompt="Design a fault-tolerant microservices architecture with multi-region failover.">
+              <span class="starter-icon">🏛️</span>
+              <span class="starter-text">Design a fault-tolerant microservices architecture</span>
+            </button>
+            <button class="starter-card" data-prompt="Write a Python FastAPI service with JWT authentication and rate limiting.">
+              <span class="starter-icon">💻</span>
+              <span class="starter-text">Build a complete FastAPI auth service with rate limiting</span>
+            </button>
+            <button class="starter-card" data-prompt="Perform a security audit on an API gateway handling sensitive credentials.">
+              <span class="starter-icon">🛡️</span>
+              <span class="starter-text">Perform a security audit for credential leakage</span>
+            </button>
+            <button class="starter-card" data-prompt="Simulate a provider failover: what happens when NVIDIA NIM hits HTTP 429?">
+              <span class="starter-icon">🔄</span>
+              <span class="starter-text">Simulate provider failover and resilience handling</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Failover Banner Notification -->
+      <div class="failover-banner" id="failoverBanner" style="display: none;">
+        <span class="failover-icon">⚠️</span>
+        <span class="failover-text" id="failoverText">Failover occurred! Shifted to OpenRouter.</span>
+        <button class="failover-close" id="btnDismissFailover">×</button>
+      </div>
+
+      <!-- Input Area -->
+      <div class="chat-input-wrapper">
+        <div class="chat-input-box">
+          <textarea 
+            id="chatInput" 
+            placeholder="Message Universal Agentic... (Shift + Enter for newline)" 
+            rows="1"
+          ></textarea>
+          <div class="input-actions">
+            <span class="input-hint">Enter to send • Shift+Enter for new line</span>
+            <button class="btn-send" id="btnSend" title="Send Message">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- RIGHT ARTIFACTS DRAWER (Split Screen) -->
+    <aside class="artifacts-drawer" id="artifactsDrawer">
+      <div class="artifacts-header">
+        <div class="artifacts-title-row">
+          <span class="artifacts-icon">📑</span>
+          <span class="artifacts-title">Artifacts & Code</span>
+        </div>
+        <div class="artifacts-controls">
+          <button class="btn-copy-artifact" id="btnCopyArtifact" title="Copy Content">Copy</button>
+          <button class="btn-close-artifacts" id="btnCloseArtifacts" title="Close Drawer">×</button>
+        </div>
+      </div>
+
+      <div class="artifacts-tabs">
+        <button class="tab-btn active" data-tab="code">Code</button>
+        <button class="tab-btn" data-tab="preview">Preview</button>
+      </div>
+
+      <div class="artifacts-content">
+        <div class="artifact-tab-content active" id="artifactCodeTab">
+          <pre><code id="artifactCodeBlock" class="hljs">No artifacts generated yet. Ask the assistant to write code or a document to view it here!</code></pre>
+        </div>
+        <div class="artifact-tab-content" id="artifactPreviewTab">
+          <div id="artifactPreviewContainer" class="artifact-preview-box">
+            <p style="color: #888;">Artifact preview will appear here.</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- API MANAGEMENT MODAL (INSERT / DELETE ANY API) -->
+  <div class="modal-backdrop" id="apiModalBackdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2>API Provider Management</h2>
+          <p>Insert any LLM API, set models and priorities, or delete providers instantly.</p>
+        </div>
+        <button class="modal-close" id="btnCloseApiModal">×</button>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Active Providers List -->
+        <div class="modal-section">
+          <h3>Active Configured Providers</h3>
+          <div class="providers-table-wrapper">
+            <table class="providers-table" id="providersTable">
+              <thead>
+                <tr>
+                  <th>Priority</th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Model</th>
+                  <th>Keys</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="providersTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Insert New API Form -->
+        <div class="modal-section">
+          <h3>Insert Any API Provider</h3>
+          <form id="addProviderForm" class="add-provider-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Provider Type</label>
+                <select id="newProviderType" required>
+                  <option value="nvidia">NVIDIA NIM</option>
+                  <option value="openrouter">OpenRouter</option>
+                  <option value="gemini">Google Gemini</option>
+                  <option value="openai">OpenAI</option>
+                  <option value="anthropic">Anthropic Claude</option>
+                  <option value="together">Together AI</option>
+                  <option value="perplexity">Perplexity</option>
+                  <option value="cohere">Cohere</option>
+                  <option value="openai_compatible">Custom OpenAI Compatible (Groq, DeepSeek, Ollama, etc.)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Provider Name</label>
+                <input type="text" id="newProviderName" placeholder="e.g., groq-speed or my-custom-nim" required>
+              </div>
+
+              <div class="form-group">
+                <label>Model ID</label>
+                <input type="text" id="newProviderModel" placeholder="e.g., meta/llama-3.3-70b-instruct or gpt-4o" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>API Key(s) <span class="label-hint">(comma-separated for multi-key rotation)</span></label>
+                <input type="password" id="newProviderKeys" placeholder="nvapi-... or sk-or-v1-... or AIzaSy..." required>
+              </div>
+
+              <div class="form-group">
+                <label>Priority</label>
+                <input type="number" id="newProviderPriority" value="3" min="1" max="99" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>Base URL <span class="label-hint">(Optional / for Ollama or Groq)</span></label>
+                <input type="url" id="newProviderBaseUrl" placeholder="https://api.groq.com/openai/v1 or http://localhost:11434/v1">
+              </div>
+              <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn-add-provider" id="btnAddProvider">
+                  + Insert Provider
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
