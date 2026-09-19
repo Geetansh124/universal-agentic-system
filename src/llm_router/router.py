@@ -58,6 +58,7 @@ class UniversalLLMRouter:
         ProviderType.TOGETHER: OpenAIAdapter,
         ProviderType.PERPLEXITY: OpenAIAdapter,
         ProviderType.COHERE: CohereAdapter,
+        ProviderType.OPENROUTER: OpenAIAdapter,
         ProviderType.OPENAI_COMPATIBLE: OpenAIAdapter,
     }
 

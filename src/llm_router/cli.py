@@ -134,12 +134,87 @@ def run_failover_simulation() -> None:
     print("=" * 70)
 
 
+def run_interactive_chat(router: UniversalLLMRouter) -> None:
+    """Run an interactive multi-turn chat session with automatic failover."""
+    print("=" * 70)
+    print(" UNIVERSAL AGENTIC SYSTEM: INTERACTIVE CHAT MODE")
+    print("=" * 70)
+    print("Multi-provider LLM router active with automatic failover.")
+    print("Commands:")
+    print("  /health   - View active provider health & key status")
+    print("  /history  - View failover audit history")
+    print("  /clear    - Reset conversation history")
+    print("  /exit     - Exit chat session (or Ctrl+C)")
+    print("-" * 70)
+
+    conversation_history: list[Message] = []
+
+    while True:
+        try:
+            user_input = input("\nYou > ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting chat session. Goodbye!")
+            break
+
+        if not user_input:
+            continue
+
+        if user_input.lower() in ("/exit", "exit", "quit"):
+            print("Exiting chat session. Goodbye!")
+            break
+
+        if user_input.lower() == "/clear":
+            conversation_history.clear()
+            print("[History cleared. Starting a fresh conversation.]")
+            continue
+
+        if user_input.lower() == "/health":
+            health = router.get_health_status()
+            print(json.dumps(health, indent=2))
+            continue
+
+        if user_input.lower() == "/history":
+            if not router.failover_history:
+                print("[No failover events recorded yet.]")
+            else:
+                print(f"[Total failover events: {len(router.failover_history)}]")
+                for i, ev in enumerate(router.failover_history, 1):
+                    print(
+                        f"  {i}. {ev.from_provider} [{ev.from_key_masked}] -> {ev.to_provider} [{ev.to_key_masked}] "
+                        f"({ev.reason.value})"
+                    )
+            continue
+
+        # Append user message to history
+        conversation_history.append(Message(role="user", content=user_input))
+
+        req = LLMRequest(messages=list(conversation_history))
+
+        prev_failover_count = len(router.failover_history)
+        try:
+            resp = router.generate(req)
+            # Append assistant response to history
+            conversation_history.append(Message(role="assistant", content=resp.content))
+
+            # Check if failover occurred during this turn
+            new_failovers = router.failover_history[prev_failover_count:]
+            if new_failovers:
+                for ev in new_failovers:
+                    print(f"\n[!] FAILOVER ALERT: Shifted from '{ev.from_provider}' to '{ev.to_provider}' ({ev.reason.value})")
+
+            print(f"\nAI [{resp.provider_name} | {resp.model}] >\n{resp.content}")
+
+        except Exception as err:
+            print(f"\n[Error] Failed to generate response: {err}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Universal LLM Router CLI")
     parser.add_argument("--config", type=str, default="config/llm_router_config.json", help="Path to config file")
     parser.add_argument("--health", action="store_true", help="Print health status of configured providers")
     parser.add_argument("--simulate-failover", action="store_true", help="Run simulated automatic failover demo")
-    parser.add_argument("--prompt", type=str, help="Generate completion for a prompt")
+    parser.add_argument("--chat", action="store_true", help="Start interactive multi-turn chat session")
+    parser.add_argument("--prompt", type=str, help="Generate completion for a single prompt")
     args = parser.parse_args()
 
     if args.simulate_failover:
@@ -165,6 +240,10 @@ def main() -> None:
         print(json.dumps(router.get_health_status(), indent=2))
         return
 
+    if args.chat:
+        run_interactive_chat(router)
+        return
+
     if args.prompt:
         try:
             resp = router.prompt(args.prompt)
@@ -174,7 +253,8 @@ def main() -> None:
             sys.exit(1)
         return
 
-    parser.print_help()
+    # Default to chat mode if no flags given and config exists
+    run_interactive_chat(router)
 
 
 if __name__ == "__main__":

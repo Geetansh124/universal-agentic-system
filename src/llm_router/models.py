@@ -18,6 +18,7 @@ class ProviderType(str, Enum):
     TOGETHER = "together"
     PERPLEXITY = "perplexity"
     COHERE = "cohere"
+    OPENROUTER = "openrouter"
     OPENAI_COMPATIBLE = "openai_compatible"  # Groq, DeepSeek, Mistral, Ollama, OpenRouter, etc.
 
 
@@ -30,6 +31,7 @@ PROVIDER_DEFAULT_URLS: Dict[ProviderType, str] = {
     ProviderType.TOGETHER: "https://api.together.xyz/v1",
     ProviderType.PERPLEXITY: "https://api.perplexity.ai",
     ProviderType.COHERE: "https://api.cohere.com/v2",
+    ProviderType.OPENROUTER: "https://openrouter.ai/api/v1",
 }
 
 PROVIDER_DEFAULT_MODELS: Dict[ProviderType, str] = {
@@ -41,6 +43,7 @@ PROVIDER_DEFAULT_MODELS: Dict[ProviderType, str] = {
     ProviderType.TOGETHER: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
     ProviderType.PERPLEXITY: "sonar",
     ProviderType.COHERE: "command-r-plus-08-2024",
+    ProviderType.OPENROUTER: "meta-llama/llama-3.3-70b-instruct",
 }
 
 
