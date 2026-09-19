@@ -13,7 +13,35 @@ class ProviderType(str, Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GEMINI = "gemini"
+    NVIDIA = "nvidia"
+    OPENCODE = "opencode"
+    TOGETHER = "together"
+    PERPLEXITY = "perplexity"
+    COHERE = "cohere"
     OPENAI_COMPATIBLE = "openai_compatible"  # Groq, DeepSeek, Mistral, Ollama, OpenRouter, etc.
+
+
+PROVIDER_DEFAULT_URLS: Dict[ProviderType, str] = {
+    ProviderType.OPENAI: "https://api.openai.com/v1",
+    ProviderType.ANTHROPIC: "https://api.anthropic.com/v1",
+    ProviderType.GEMINI: "https://generativelanguage.googleapis.com/v1beta",
+    ProviderType.NVIDIA: "https://integrate.api.nvidia.com/v1",
+    ProviderType.OPENCODE: "https://api.together.xyz/v1",
+    ProviderType.TOGETHER: "https://api.together.xyz/v1",
+    ProviderType.PERPLEXITY: "https://api.perplexity.ai",
+    ProviderType.COHERE: "https://api.cohere.com/v2",
+}
+
+PROVIDER_DEFAULT_MODELS: Dict[ProviderType, str] = {
+    ProviderType.OPENAI: "gpt-4o-mini",
+    ProviderType.ANTHROPIC: "claude-3-5-haiku-20241022",
+    ProviderType.GEMINI: "gemini-2.5-flash",
+    ProviderType.NVIDIA: "meta/llama-3.3-70b-instruct",
+    ProviderType.OPENCODE: "Qwen/Qwen2.5-Coder-32B-Instruct",
+    ProviderType.TOGETHER: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    ProviderType.PERPLEXITY: "sonar",
+    ProviderType.COHERE: "command-r-plus-08-2024",
+}
 
 
 class FailoverReason(str, Enum):

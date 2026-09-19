@@ -23,10 +23,15 @@ from .models import (
     Message,
     ProviderConfig,
     ProviderType,
+    PROVIDER_DEFAULT_MODELS,
+    PROVIDER_DEFAULT_URLS,
 )
 from .providers.anthropic_adapter import AnthropicAdapter
 from .providers.base import BaseLLMAdapter
+from .providers.cohere_adapter import CohereAdapter
 from .providers.gemini_adapter import GeminiAdapter
+from .providers.nvidia_adapter import NvidiaAdapter
+from .providers.opencode_adapter import OpenCodeAdapter
 from .providers.openai_adapter import OpenAIAdapter
 
 logger = logging.getLogger("llm_router")
@@ -48,6 +53,11 @@ class UniversalLLMRouter:
         ProviderType.OPENAI: OpenAIAdapter,
         ProviderType.ANTHROPIC: AnthropicAdapter,
         ProviderType.GEMINI: GeminiAdapter,
+        ProviderType.NVIDIA: NvidiaAdapter,
+        ProviderType.OPENCODE: OpenCodeAdapter,
+        ProviderType.TOGETHER: OpenAIAdapter,
+        ProviderType.PERPLEXITY: OpenAIAdapter,
+        ProviderType.COHERE: CohereAdapter,
         ProviderType.OPENAI_COMPATIBLE: OpenAIAdapter,
     }
 
@@ -63,6 +73,12 @@ class UniversalLLMRouter:
 
     def add_provider(self, config: ProviderConfig) -> None:
         """Add a provider configuration to the router."""
+        # Auto-populate official default base URL and model if omitted
+        if not config.base_url and config.provider_type in PROVIDER_DEFAULT_URLS:
+            config.base_url = PROVIDER_DEFAULT_URLS[config.provider_type]
+        if not config.model and config.provider_type in PROVIDER_DEFAULT_MODELS:
+            config.model = PROVIDER_DEFAULT_MODELS[config.provider_type]
+
         config.validate()
         adapter_cls = self.ADAPTER_MAP.get(config.provider_type)
         if not adapter_cls:

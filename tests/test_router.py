@@ -223,12 +223,78 @@ class TestUniversalLLMRouter(unittest.TestCase):
         os.environ["TEST_LLM_KEY_GEMINI"] = "AIzaSyTest12345"
         try:
             router = UniversalLLMRouter.from_config_file("config/llm_router_config.example.json")
-            self.assertEqual(len(router.providers), 5)
-            # Find google-gemini provider
-            gemini_p = next(p for p in router.providers if p.name == "google-gemini")
-            self.assertEqual(gemini_p.model, "gemini-2.5-flash")
+            # Now contains nvidia-nim, opencode-hub, gemini, groq, openai, anthropic, ollama (7 total)
+            self.assertEqual(len(router.providers), 7)
+            # Find nvidia-nim and opencode-hub providers
+            nvidia_p = next(p for p in router.providers if p.name == "nvidia-nim")
+            self.assertEqual(nvidia_p.provider_type, ProviderType.NVIDIA)
+            self.assertEqual(nvidia_p.model, "meta/llama-3.3-70b-instruct")
+
+            opencode_p = next(p for p in router.providers if p.name == "opencode-hub")
+            self.assertEqual(opencode_p.provider_type, ProviderType.OPENCODE)
         finally:
             os.environ.pop("TEST_LLM_KEY_GEMINI", None)
+
+    def test_nvidia_auto_defaults(self):
+        """Test that Nvidia provider automatically sets official base URL and model if omitted."""
+        router = UniversalLLMRouter()
+        cfg = ProviderConfig(
+            name="my-nvidia",
+            provider_type=ProviderType.NVIDIA,
+            model="",
+            api_keys=["nvapi-test12345678"],
+        )
+        router.add_provider(cfg)
+        self.assertEqual(cfg.base_url, "https://integrate.api.nvidia.com/v1")
+        self.assertEqual(cfg.model, "meta/llama-3.3-70b-instruct")
+
+    def test_opencode_auto_defaults(self):
+        """Test that OpenCode provider automatically sets defaults."""
+        router = UniversalLLMRouter()
+        cfg = ProviderConfig(
+            name="my-opencode",
+            provider_type=ProviderType.OPENCODE,
+            model="",
+            api_keys=["opencode-test12345678"],
+        )
+        router.add_provider(cfg)
+        self.assertEqual(cfg.base_url, "https://api.together.xyz/v1")
+        self.assertEqual(cfg.model, "Qwen/Qwen2.5-Coder-32B-Instruct")
+
+    def test_nvidia_to_opencode_to_gemini_failover(self):
+        """Test full failover chain: NVIDIA -> OpenCode -> Gemini."""
+        router = UniversalLLMRouter()
+
+        nvidia = ProviderConfig(
+            name="nvidia", provider_type=ProviderType.NVIDIA, model="meta/llama-3.3-70b-instruct", api_keys=["nv12345678"], priority=1
+        )
+        opencode = ProviderConfig(
+            name="opencode", provider_type=ProviderType.OPENCODE, model="Qwen/Qwen2.5-Coder-32B-Instruct", api_keys=["oc12345678"], priority=2
+        )
+        gemini = ProviderConfig(
+            name="gemini", provider_type=ProviderType.GEMINI, model="gemini-2.5-flash", api_keys=["gm12345678"], priority=3
+        )
+
+        router.add_provider(nvidia)
+        router.add_provider(opencode)
+        router.add_provider(gemini)
+
+        # Nvidia fails with 429
+        router._adapters["nvidia"] = MockFailingAdapter(nvidia, fail_calls=1)
+        # OpenCode fails with rate limit
+        router._adapters["opencode"] = MockFailingAdapter(opencode, fail_calls=1)
+        # Gemini succeeds
+        router._adapters["gemini"] = MockFailingAdapter(gemini, fail_calls=0)
+
+        req = LLMRequest(messages=[Message(role="user", content="Write a python function")])
+        resp = router.generate(req)
+
+        self.assertEqual(resp.provider_name, "gemini")
+        self.assertEqual(len(router.failover_history), 2)
+        self.assertEqual(router.failover_history[0].from_provider, "nvidia")
+        self.assertEqual(router.failover_history[0].to_provider, "opencode")
+        self.assertEqual(router.failover_history[1].from_provider, "opencode")
+        self.assertEqual(router.failover_history[1].to_provider, "gemini")
 
 
 if __name__ == "__main__":

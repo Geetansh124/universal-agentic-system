@@ -61,40 +61,52 @@ def run_failover_simulation() -> None:
     print(" UNIVERSAL AGENTIC SYSTEM: AUTOMATIC FAILOVER DEMONSTRATION")
     print("=" * 70)
     print("Scenario:")
-    print("  1. Primary Provider: 'Google Gemini' (priority 1) with 2 API keys.")
-    print("     - Gemini Key 1 receives HTTP 429 (Quota Exhausted)")
-    print("     - Gemini Key 2 also receives HTTP 429 (Quota Exhausted)")
-    print("  2. Fallback Provider: 'Groq Cloud' (priority 2)")
+    print("  1. Primary Provider: 'NVIDIA NIM' (priority 1)")
+    print("     - Model: meta/llama-3.3-70b-instruct")
+    print("     - Encounters HTTP 429 (NVIDIA NIM Quota Exhausted)")
+    print("  2. Fallback Provider 1: 'OpenCode Hub' (priority 2)")
+    print("     - Model: Qwen/Qwen2.5-Coder-32B-Instruct")
+    print("     - Encounters Rate Limit")
+    print("  3. Fallback Provider 2: 'Google Gemini' (priority 3)")
     print("     - Automatically takes over and completes the task!")
     print("-" * 70)
 
     router = UniversalLLMRouter()
 
-    # Provider 1: Gemini with 2 keys that will exhaust
+    # Provider 1: NVIDIA NIM (Priority 1) -> fails
+    nvidia_cfg = ProviderConfig(
+        name="nvidia-nim",
+        provider_type=ProviderType.NVIDIA,
+        model="meta/llama-3.3-70b-instruct",
+        api_keys=["nvapi-DUMMY_NVIDIA_KEY_1111"],
+        priority=1,
+        cooldown_seconds=60.0,
+    )
+    router.add_provider(nvidia_cfg)
+    router._adapters["nvidia-nim"] = MockSimulatedAdapter(nvidia_cfg, fail_count=1)
+
+    # Provider 2: OpenCode (Priority 2) -> fails
+    opencode_cfg = ProviderConfig(
+        name="opencode-hub",
+        provider_type=ProviderType.OPENCODE,
+        model="Qwen/Qwen2.5-Coder-32B-Instruct",
+        api_keys=["opencode_DUMMY_KEY_2222"],
+        priority=2,
+        cooldown_seconds=60.0,
+    )
+    router.add_provider(opencode_cfg)
+    router._adapters["opencode-hub"] = MockSimulatedAdapter(opencode_cfg, fail_count=1)
+
+    # Provider 3: Gemini (Priority 3) -> succeeds
     gemini_cfg = ProviderConfig(
         name="google-gemini",
         provider_type=ProviderType.GEMINI,
         model="gemini-2.5-flash",
-        api_keys=["AIzaSyDUMMY_GEMINI_KEY_1111", "AIzaSyDUMMY_GEMINI_KEY_2222"],
-        priority=1,
-        cooldown_seconds=60.0,
+        api_keys=["AIzaSyDUMMY_GEMINI_KEY_3333"],
+        priority=3,
     )
     router.add_provider(gemini_cfg)
-    # Inject mock adapter that fails twice (exhausting both keys)
-    router._adapters["google-gemini"] = MockSimulatedAdapter(gemini_cfg, fail_count=2)
-
-    # Provider 2: Groq with 1 active key
-    groq_cfg = ProviderConfig(
-        name="groq-llama",
-        provider_type=ProviderType.OPENAI_COMPATIBLE,
-        model="llama-3.3-70b-versatile",
-        api_keys=["gsk_DUMMY_GROQ_KEY_3333"],
-        priority=2,
-        base_url="https://api.groq.com/openai/v1",
-    )
-    router.add_provider(groq_cfg)
-    # Inject mock adapter that succeeds
-    router._adapters["groq-llama"] = MockSimulatedAdapter(groq_cfg, fail_count=0)
+    router._adapters["google-gemini"] = MockSimulatedAdapter(gemini_cfg, fail_count=0)
 
     print("\n[Step 1] Initial Router Status:")
     for p in router.get_health_status()["providers"]:

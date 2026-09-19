@@ -3,10 +3,34 @@
   "comment": "Configure multiple providers and keys. When any key or provider is exhausted (HTTP 429 / quota limit), the router automatically shifts to the next one.",
   "providers": [
     {
+      "name": "nvidia-nim",
+      "provider_type": "nvidia",
+      "model": "meta/llama-3.3-70b-instruct",
+      "priority": 1,
+      "api_keys": [
+        "${NVIDIA_API_KEY}"
+      ],
+      "timeout_seconds": 30.0,
+      "cooldown_seconds": 60.0,
+      "enabled": true
+    },
+    {
+      "name": "opencode-hub",
+      "provider_type": "opencode",
+      "model": "Qwen/Qwen2.5-Coder-32B-Instruct",
+      "priority": 2,
+      "api_keys": [
+        "${OPENCODE_API_KEY}"
+      ],
+      "timeout_seconds": 30.0,
+      "cooldown_seconds": 60.0,
+      "enabled": true
+    },
+    {
       "name": "google-gemini",
       "provider_type": "gemini",
       "model": "gemini-2.5-flash",
-      "priority": 1,
+      "priority": 3,
       "api_keys": [
         "${GEMINI_API_KEY_1}",
         "${GEMINI_API_KEY_2}"
